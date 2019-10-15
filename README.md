@@ -5,3 +5,5 @@ Intracranial hemorrhage, bleeding that occurs inside the cranium, is a serious h
 Diagnosis requires an urgent procedure. When a patient shows acute neurological symptoms such as severe headache or loss of consciousness, highly trained specialists review medical images of the patient’s cranium to look for the presence, location and type of hemorrhage. The process is complicated and often time consuming. 
 
 The objective is to detect acute intracranial hemorrhage and its subtypes (epidural,intraparenchymal,intraventricular,subarachnoid,subdural) using a DCNN.
+
+Data is not included in this Github please see: https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection/data
