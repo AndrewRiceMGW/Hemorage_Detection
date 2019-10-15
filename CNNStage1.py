@@ -22,16 +22,16 @@ print(Data.head(10))
 
 
 
-splitData = Data['ID'].str.split('_', expand = True)
-Data['class'] = splitData[2]
-Data['fileName'] = splitData[0] + '_' + splitData[1]
+splitIdx = Data['ID'].str.split('_', expand = True)
+Data['class'] = splitIdx[2]
+Data['fileName'] = splitIdx[0] + '_' + splitIdx[1]
 Data = Data.drop(columns=['ID'],axis=1)
-del splitData
+del splitIdx
 print(Data.head(10))
 
 
 
-Final_Data = Data[['Label', 'fileName', 'class']].drop_duplicates().Final_table(index = 'fileName',columns=['class'], values='Label')
+Final_Data = Data[['Label', 'fileName', 'class']].drop_duplicates().pivot_table(index = 'fileName',columns=['class'], values='Label')
 Final_Data = pd.DataFrame(Final_Data.to_records())
 print(Final_Data.head(10))
 
