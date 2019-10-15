@@ -17,23 +17,23 @@ import scipy as sp
 
 import os
 basePath = os.path.abspath("/home/andrew/Documents/Machine Learninng/ItraCranialProject/rsna-intracranial-hemorrhage-detection/")
-trainInfo = pd.read_csv(basePath+'/stage_1_train.csv')
-print(trainInfo.head(10))
+Data = pd.read_csv(basePath+'/stage_1_train.csv')
+print(Data.head(10))
 
 
 
-splitData = trainInfo['ID'].str.split('_', expand = True)
-trainInfo['class'] = splitData[2]
-trainInfo['fileName'] = splitData[0] + '_' + splitData[1]
-trainInfo = trainInfo.drop(columns=['ID'],axis=1)
+splitData = Data['ID'].str.split('_', expand = True)
+Data['class'] = splitData[2]
+Data['fileName'] = splitData[0] + '_' + splitData[1]
+Data = Data.drop(columns=['ID'],axis=1)
 del splitData
-print(trainInfo.head(10))
+print(Data.head(10))
 
 
 
-pivot_trainInfo = trainInfo[['Label', 'fileName', 'class']].drop_duplicates().pivot_table(index = 'fileName',columns=['class'], values='Label')
-pivot_trainInfo = pd.DataFrame(pivot_trainInfo.to_records())
-print(pivot_trainInfo.head(10))
+Final_Data = Data[['Label', 'fileName', 'class']].drop_duplicates().Final_table(index = 'fileName',columns=['class'], values='Label')
+Final_Data = pd.DataFrame(Final_Data.to_records())
+print(Final_Data.head(10))
 
 
 
@@ -58,7 +58,7 @@ rows = 5
 columns = 5
 for i_col in colsToPlot:
     fig = plt.figure(figsize = (20,10))
-    trainImages = list(pivot_trainInfo.loc[pivot_trainInfo[i_col]==1,'fileName'])
+    trainImages = list(Final_Data.loc[Final_Data[i_col]==1,'fileName'])
     plt.title(i_col + ' Images')
     for i in range(rows*columns):
         ds = pydicom.dcmread(basePath + '/stage_1_train_images/' + trainImages[i*100+1] +'.dcm')
@@ -68,13 +68,13 @@ for i_col in colsToPlot:
 
 for i_col in colsToPlot:
     plt.figure()
-    ax = sns.countplot(pivot_trainInfo[i_col])
+    ax = sns.countplot(Final_Data[i_col])
     ax.set_title(i_col + ' class count')
-    
+   
 
 
 #dropping of corrupted image from dataset as mentioned in https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection/discussion/109701#latest-640597
-pivot_trainInfo = pivot_trainInfo.drop(list(pivot_trainInfo['fileName']).index('ID_6431af929'))
+Final_Data = Final_Data.drop(list(Final_Data['fileName']).index('ID_6431af929'))
 
 import keras
 from keras.layers import Dense, Activation,Dropout,Conv2D,MaxPooling2D,Flatten,Input,BatchNormalization,AveragePooling2D,LeakyReLU,ZeroPadding2D,Add
@@ -84,13 +84,13 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import cv2
 
-pivot_trainInfo = pivot_trainInfo.sample(frac=1).reset_index(drop=True)
-train_df,val_df = train_test_split(pivot_trainInfo,test_size = 0.03, random_state = 42)
+Final_Data = Final_Data.sample(frac=1).reset_index(drop=True)
+train_df,val_df = train_test_split(Final_Data,test_size = 0.03, random_state = 42)
 batch_size = 64
 
 
-y_train = train_df[['any','epidural','intraparenchymal','intraventricular','subarachnoid','subdural']]
-y_val = val_df[['any','epidural','intraparenchymal','intraventricular','subarachnoid','subdural']]
+YTrain = train_df[['any','epidural','intraparenchymal','intraventricular','subarachnoid','subdural']]
+Y_Val = val_df[['any','epidural','intraparenchymal','intraventricular','subarachnoid','subdural']]
 train_files = list(train_df['fileName'])
 
 def readDCMFile(fileName):
@@ -99,13 +99,13 @@ def readDCMFile(fileName):
     img = cv2.resize(img, (64, 64), interpolation = cv2.INTER_AREA) 
     return img
 
-def generateImageData(train_files,y_train):
+def generateImageDataTrain(train_files,YTrain):
     numBatches = int(np.ceil(len(train_files)/batch_size))
     while True:
         for i in range(numBatches):
             batchFiles = train_files[i*batch_size : (i+1)*batch_size]
             x_batch_data = np.array([readDCMFile(basePath + '/stage_1_train_images/' + i_f +'.dcm') for i_f in tqdm(batchFiles)])
-            y_batch_data = y_train[i*batch_size : (i+1)*batch_size]
+            y_batch_data = YTrain[i*batch_size : (i+1)*batch_size]
             x_batch_data = np.reshape(x_batch_data,(x_batch_data.shape[0],x_batch_data.shape[1],x_batch_data.shape[2],1))            
             yield x_batch_data,y_batch_data
             
@@ -120,11 +120,11 @@ def generateTestImageData(test_files):
 
 
 
-dataGenerator = generateImageData(train_files,train_df[colsToPlot])
+dataGenerator = generateImageDataTrain(train_files,train_df[colsToPlot])
 val_files = list(val_df['fileName'])
-x_val = np.array([readDCMFile(basePath + '/stage_1_train_images/' + i_f +'.dcm') for i_f in tqdm(val_files)])
+X_Val = np.array([readDCMFile(basePath + '/stage_1_train_images/' + i_f +'.dcm') for i_f in tqdm(val_files)])
 
-y_val = val_df[colsToPlot]
+Y_Val = val_df[colsToPlot]
 
 # loss function definition courtesy https://www.kaggle.com/akensert/resnet50-keras-baseline-model
 from keras import backend as K
@@ -305,7 +305,7 @@ X = AveragePooling2D(pool_size=(2, 2), padding='same')(X)
 X = Flatten()(X)
 out = Dense(6,name='fc' + str(6),activation='sigmoid')(X)
 
-x_val = np.reshape(x_val,(x_val.shape[0],x_val.shape[1],x_val.shape[2],1))
+X_Val = np.reshape(X_Val,(X_Val.shape[0],X_Val.shape[1],X_Val.shape[2],1))
 
 
 
@@ -313,7 +313,7 @@ model_conv = Model(inputs = input_img, outputs = out)
 #model_conv.compile(optimizer='Adam',loss = 'categorical_crossentropy',metrics=['accuracy'])
 model_conv.compile(optimizer='Adam',loss = logloss,metrics=[weighted_loss])
 model_conv.summary()
-history_conv = model_conv.fit_generator(dataGenerator,steps_per_epoch=500, epochs=20,validation_data = (x_val,y_val),verbose = False)
+history_conv = model_conv.fit_generator(dataGenerator,steps_per_epoch=500, epochs=20,validation_data = (X_Val,Y_Val),verbose = False)
 
 
 
@@ -323,13 +323,13 @@ testInfo['class'] = splitData[2]
 testInfo['fileName'] = splitData[0] + '_' + splitData[1]
 testInfo = testInfo.drop(columns=['ID'],axis=1)
 del splitData
-pivot_testInfo = testInfo[['fileName', 'class','Label']].drop_duplicates().pivot_table(index = 'fileName',columns=['class'], values='Label')
-pivot_testInfo = pd.DataFrame(pivot_testInfo.to_records())
-test_files = list(pivot_testInfo['fileName'])
+Final_testInfo = testInfo[['fileName', 'class','Label']].drop_duplicates().Final_table(index = 'fileName',columns=['class'], values='Label')
+Final_testInfo = pd.DataFrame(Final_testInfo.to_records())
+test_files = list(Final_testInfo['fileName'])
 testDataGenerator = generateTestImageData(test_files)
-temp_pred = model_conv.predict_generator(testDataGenerator,steps = pivot_testInfo.shape[0]/batch_size,verbose = True)
+temp_pred = model_conv.predict_generator(testDataGenerator,steps = Final_testInfo.shape[0]/batch_size,verbose = True)
 
-submission_df = pivot_testInfo
+submission_df = Final_testInfo
 submission_df['any'] = temp_pred[:,0]
 submission_df['epidural'] = temp_pred[:,1]
 submission_df['intraparenchymal'] = temp_pred[:,2]
