@@ -3,7 +3,7 @@
 """
 Created on Fri Oct 11 17:07:56 2019
 
-@author: rebecca
+@author: andrew
 """
 
 from skimage import exposure
